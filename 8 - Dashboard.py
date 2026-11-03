@@ -11,9 +11,16 @@ import plotly.express as px
 # CARREGAMENTO
 # ==================================================
 
-ARQUIVO = r"C:\Users\4126648\Downloads\código\Relatório de transporte\5 - base_pedidos_tratada.csv"
+from pathlib import Path
 
-df = pd.read_csv(ARQUIVO, sep=";", encoding="utf-8-sig")
+PASTA_ATUAL = Path(__file__).parent
+ARQUIVO = PASTA_ATUAL / "5 - base_pedidos_tratada.csv"
+
+df = pd.read_csv(
+    ARQUIVO,
+    sep=";",
+    encoding="utf-8-sig"
+)
 
 df["Status_Prazo"] = df["Status_Prazo"].fillna("Não Coletado")
 print("\nCOLUNAS ENCONTRADAS:")
