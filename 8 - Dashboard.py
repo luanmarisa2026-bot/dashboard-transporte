@@ -6,21 +6,25 @@ from dash.dependencies import Input, Output
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
+import plotly.graph_objects as go
+from pathlib import Path
+
+import json
 
 # ==================================================
 # CARREGAMENTO
 # ==================================================
 
-from pathlib import Path
 
 PASTA_ATUAL = Path(__file__).parent
 ARQUIVO = PASTA_ATUAL / "5 - base_pedidos_tratada.csv"
+ARQUIVO_GEOJSON = PASTA_ATUAL / "brasil_estados.json"
 
-df = pd.read_csv(
-    ARQUIVO,
-    sep=";",
-    encoding="utf-8-sig"
-)
+with open(ARQUIVO_GEOJSON, encoding="utf-8") as f:
+    geojson_brasil = json.load(f)
+
+
+df = pd.read_csv(ARQUIVO, sep=";", encoding="utf-8-sig")
 
 df["Status_Prazo"] = df["Status_Prazo"].fillna("Não Coletado")
 print("\nCOLUNAS ENCONTRADAS:")
@@ -52,21 +56,6 @@ print("Status_Prazo nulos:", df["Status_Prazo"].isna().sum())
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
-ABAS = dbc.Tabs(
-    [
-        dbc.Tab(label="Performance", tab_id="performance"),
-        dbc.Tab(label="Base de Dados", tab_id="base"),
-    ],
-    id="abas",
-    active_tab="performance",
-)
-
-server = app.server
-
-# ==================================================
-# LAYOUT
-# ==================================================
-
 TITULO_GRAFICO = {
     "backgroundColor": "#E5007D",
     "color": "white",
@@ -78,9 +67,104 @@ TITULO_GRAFICO = {
     "borderTopRightRadius": "12px",
 }
 
+COR_FUNDO = "#28183A"
+COR_CARD = "#37224D"
+COR_TEXTO = "white"
+COR_BORDA = "#4D3766"
+
+
+ABAS = dbc.Tabs(
+    [
+        dbc.Tab(
+            label="Performance",
+            tab_id="performance",
+            label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            active_label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            tab_style={
+                "backgroundColor": COR_FUNDO,
+                "border": "none",
+            },
+        ),
+        dbc.Tab(
+            label="Geografia OTD",
+            tab_id="geografico",
+            label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            active_label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            tab_style={
+                "backgroundColor": COR_FUNDO,
+                "border": "none",
+            },
+            active_tab_style={
+                "backgroundColor": COR_FUNDO,
+                "border": "none",
+            },
+        ),
+        dbc.Tab(
+            label="Base de Dados",
+            tab_id="base",
+            label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            active_label_style={
+                "color": "#E5007D",
+                "fontWeight": "bold",
+            },
+            tab_style={
+                "backgroundColor": COR_FUNDO,
+                "border": "none",
+            },
+            active_tab_style={
+                "backgroundColor": COR_FUNDO,
+                "border": "none",
+            },
+        ),
+    ],
+    id="abas",
+    active_tab="performance",
+)
+
+server = app.server
+
+# ==================================================
+# LAYOUT
+# ==================================================
+
+
+def aplicar_tema_escuro(fig):
+    fig.update_layout(
+        paper_bgcolor=COR_FUNDO,
+        plot_bgcolor=COR_FUNDO,
+        font=dict(color="white"),
+        legend=dict(font=dict(color="white")),
+    )
+
+    fig.update_xaxes(gridcolor="rgba(255,255,255,0.1)", color="white")
+
+    fig.update_yaxes(gridcolor="rgba(255,255,255,0.1)", color="white")
+
+    return fig
+
+
 app.layout = dbc.Container(
     [
-        html.H2("Performance Digital", className="text-center mt-3 mb-4"),
+        html.H2(
+            "Performance Digital",
+            className="text-center mt-3 mb-4",
+            style={"color": "white", "fontWeight": "bold"},
+        ),
         ABAS,
         html.Br(),
         html.Div(
@@ -162,7 +246,10 @@ app.layout = dbc.Container(
                                     [
                                         html.H6(
                                             "Fulfillments",
-                                            style={"textAlign": "center"},
+                                            style={
+                                                "textAlign": "center",
+                                                "color": "white",
+                                            },
                                         ),
                                         html.H3(
                                             id="kpi_fulfillments",
@@ -170,7 +257,7 @@ app.layout = dbc.Container(
                                                 "textAlign": "center",
                                                 "fontWeight": "bold",
                                                 "fontSize": "42px",
-                                                "color": "#333333",
+                                                "color": "white",
                                             },
                                         ),
                                     ],
@@ -182,38 +269,10 @@ app.layout = dbc.Container(
                                     },
                                 ),
                                 style={
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.10)",
+                                    "backgroundColor": COR_CARD,
+                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
                                     "borderRadius": "12px",
-                                    "border": "none",
-                                },
-                            )
-                        ),
-                        dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H6("OTD", style={"textAlign": "center"}),
-                                        html.H3(
-                                            id="kpi_otd",
-                                            style={
-                                                "textAlign": "center",
-                                                "fontWeight": "bold",
-                                                "fontSize": "42px",
-                                                "color": "#333333",
-                                            },
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "flexDirection": "column",
-                                        "justifyContent": "center",
-                                        "height": "120px",
-                                    },
-                                ),
-                                style={
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.10)",
-                                    "borderRadius": "12px",
-                                    "border": "none",
+                                    "border": f"1px solid {COR_BORDA}",
                                 },
                             )
                         ),
@@ -222,7 +281,47 @@ app.layout = dbc.Container(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Lead Time", style={"textAlign": "center"}
+                                            "OTD",
+                                            style={
+                                                "textAlign": "center",
+                                                "color": "white",
+                                            },
+                                        ),
+                                        html.H3(
+                                            id="kpi_otd",
+                                            style={
+                                                "textAlign": "center",
+                                                "fontWeight": "bold",
+                                                "fontSize": "42px",
+                                                "color": "white",
+                                            },
+                                        ),
+                                    ],
+                                    style={
+                                        "display": "flex",
+                                        "flexDirection": "column",
+                                        "justifyContent": "center",
+                                        "height": "120px",
+                                    },
+                                ),
+                                style={
+                                    "backgroundColor": COR_CARD,
+                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+                                    "borderRadius": "12px",
+                                    "border": f"1px solid {COR_BORDA}",
+                                },
+                            )
+                        ),
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Lead Time",
+                                            style={
+                                                "textAlign": "center",
+                                                "color": "white",
+                                            },
                                         ),
                                         html.H3(
                                             id="kpi_lead",
@@ -230,7 +329,7 @@ app.layout = dbc.Container(
                                                 "textAlign": "center",
                                                 "fontWeight": "bold",
                                                 "fontSize": "42px",
-                                                "color": "#333333",
+                                                "color": "white",
                                             },
                                         ),
                                     ],
@@ -242,9 +341,10 @@ app.layout = dbc.Container(
                                     },
                                 ),
                                 style={
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.10)",
+                                    "backgroundColor": COR_CARD,
+                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
                                     "borderRadius": "12px",
-                                    "border": "none",
+                                    "border": f"1px solid {COR_BORDA}",
                                 },
                             )
                         ),
@@ -253,7 +353,11 @@ app.layout = dbc.Container(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Saldo SLA", style={"textAlign": "center"}
+                                            "Saldo SLA",
+                                            style={
+                                                "textAlign": "center",
+                                                "color": "white",
+                                            },
                                         ),
                                         html.H3(
                                             id="kpi_saldo",
@@ -261,7 +365,7 @@ app.layout = dbc.Container(
                                                 "textAlign": "center",
                                                 "fontWeight": "bold",
                                                 "fontSize": "42px",
-                                                "color": "#333333",
+                                                "color": "white",
                                             },
                                         ),
                                     ],
@@ -273,9 +377,10 @@ app.layout = dbc.Container(
                                     },
                                 ),
                                 style={
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.10)",
+                                    "backgroundColor": COR_CARD,
+                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
                                     "borderRadius": "12px",
-                                    "border": "none",
+                                    "border": f"1px solid {COR_BORDA}",
                                 },
                             )
                         ),
@@ -340,6 +445,74 @@ app.layout = dbc.Container(
                                     id="graf_transportadora",
                                     config={"displayModeBar": False},
                                 ),
+                            ],
+                            width=12,
+                        )
+                    ]
+                ),
+            ],
+        ),
+        html.Div(
+            id="aba_geografico",
+            style={"display": "none"},
+            children=[
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="filtro_transportadora_mapa",
+                                options=[
+                                    {"label": x, "value": x}
+                                    for x in sorted(
+                                        df["Transportadora"].dropna().unique()
+                                    )
+                                ],
+                                placeholder="Selecione uma transportadora",
+                            ),
+                            width=6,
+                        ),
+                    ]
+                ),
+                html.Br(),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Div(
+                                    "OTD Geral por UF",
+                                    style=TITULO_GRAFICO,
+                                ),
+                                dcc.Graph(id="mapa_otd_uf"),
+                            ],
+                            width=12,
+                        )
+                    ]
+                ),
+                html.Br(),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Div(
+                                    "OTD da Transportadora",
+                                    style=TITULO_GRAFICO,
+                                ),
+                                dcc.Graph(id="mapa_otd_transportadora"),
+                            ],
+                            width=12,
+                        )
+                    ]
+                ),
+                html.Br(),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.Div(
+                                    "OTD por Região",
+                                    style=TITULO_GRAFICO,
+                                ),
+                                dcc.Graph(id="graf_regiao_otd"),
                             ],
                             width=12,
                         )
@@ -423,7 +596,6 @@ app.layout = dbc.Container(
                     className="mb-3",
                 ),
                 html.Br(),
-
                 dash_table.DataTable(
                     id="tabela",
                     fixed_rows={"headers": True},
@@ -436,48 +608,42 @@ app.layout = dbc.Container(
                         "maxWidth": "100%",
                     },
                     style_cell={
+                        "backgroundColor": COR_CARD,
+                        "color": "white",
                         "textAlign": "left",
                         "fontSize": 12,
                         "minWidth": "150px",
                         "width": "150px",
                         "maxWidth": "300px",
-                        "whiteSpace": "normal"
                     },
                     style_data_conditional=[
-
                         {
                             "if": {"row_index": "odd"},
-                            "backgroundColor": "#FFF5FA"
+                            "backgroundColor": "#332146",
+                            "color": "white",
                         },
-
                         {
                             "if": {"row_index": "even"},
-                            "backgroundColor": "white"
+                            "backgroundColor": "#28183A",
+                            "color": "white",
                         },
-
-                        {
-                            "if": {"state": "selected"},
-                            "backgroundColor": "#E5007D",
-                            "color": "white"
-                        }
-
                     ],
                     style_header={
-
-                    "backgroundColor": "#E5007D",
-
-                    "color": "white",
-
-                    "fontWeight": "bold",
-
-                    "textAlign": "center"
-
-                },
+                        "backgroundColor": "#E5007D",
+                        "color": "white",
+                        "fontWeight": "bold",
+                        "textAlign": "center",
+                    },
                 ),
             ],
         ),
     ],
     fluid=True,
+    style={
+        "backgroundColor": COR_FUNDO,
+        "minHeight": "100vh",
+        "paddingBottom": "30px",
+    },
 )
 
 
@@ -488,15 +654,31 @@ app.layout = dbc.Container(
 
 @app.callback(
     Output("aba_performance", "style"),
+    Output("aba_geografico", "style"),
     Output("aba_base", "style"),
     Input("abas", "active_tab"),
 )
 def trocar_aba(aba):
 
     if aba == "performance":
-        return ({"display": "block"}, {"display": "none"})
+        return (
+            {"display": "block"},
+            {"display": "none"},
+            {"display": "none"},
+        )
 
-    return ({"display": "none"}, {"display": "block"})
+    elif aba == "geografico":
+        return (
+            {"display": "none"},
+            {"display": "block"},
+            {"display": "none"},
+        )
+
+    return (
+        {"display": "none"},
+        {"display": "none"},
+        {"display": "block"},
+    )
 
 
 @app.callback(
@@ -510,6 +692,9 @@ def trocar_aba(aba):
         Output("graf_canal", "figure"),
         Output("graf_uf", "figure"),
         Output("graf_transportadora", "figure"),
+        Output("mapa_otd_uf", "figure"),
+        Output("mapa_otd_transportadora", "figure"),
+        Output("graf_regiao_otd", "figure"),
         Output("tabela", "data"),
         Output("tabela", "columns"),
     ],
@@ -520,6 +705,7 @@ def trocar_aba(aba):
         Input("filtro_origem", "value"),
         Input("filtro_transportadora", "value"),
         Input("filtro_uf", "value"),
+        Input("filtro_transportadora_mapa", "value"),
         Input("base_canal", "value"),
         Input("base_origem", "value"),
         Input("base_transportadora", "value"),
@@ -534,6 +720,7 @@ def atualizar_dashboard(
     origem,
     transportadora,
     uf,
+    transportadora_mapa,
     base_canal,
     base_origem,
     base_transportadora,
@@ -588,14 +775,10 @@ def atualizar_dashboard(
             },
         )
 
+        fig_origem = aplicar_tema_escuro(fig_origem)
+
         fig_origem.update_layout(
-            title={
-                "text": "Origem Faturamento",
-                "x": 0.5,
-                "xanchor": "center",
-                "font": {"size": 18, "color": "white"},
-            },
-            paper_bgcolor="white",
+            paper_bgcolor=COR_FUNDO,
         )
 
         dff["Status_Prazo_Ajustado"] = dff["Status_Prazo"].fillna("Não Coletado")
@@ -613,6 +796,8 @@ def atualizar_dashboard(
             },
         )
 
+        fig_status = aplicar_tema_escuro(fig_status)
+
         canal_df = dff.groupby("Canal").size().reset_index(name="Fulfillments")
 
         canal_df["Rotulo"] = canal_df["Fulfillments"].apply(
@@ -626,6 +811,8 @@ def atualizar_dashboard(
             text="Rotulo",
             title="",
         )
+
+        fig_canal = aplicar_tema_escuro(fig_canal)
 
         fig_canal.update_traces(textposition="outside")
 
@@ -650,6 +837,8 @@ def atualizar_dashboard(
             title="",
         )
 
+        fig_uf = aplicar_tema_escuro(fig_uf)
+
         fig_uf.update_traces(texttemplate="%{y:.1f}%", textposition="top center")
 
         largura = max(len(uf_otd) * 80, 1800)
@@ -657,8 +846,8 @@ def atualizar_dashboard(
         fig_uf.update_layout(
             width=max(len(uf_otd) * 80, 1800),
             height=500,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            plot_bgcolor=COR_FUNDO,
+            paper_bgcolor=COR_FUNDO,
             hovermode="x unified",
             margin=dict(t=80, l=60, r=30, b=60),  # aumente de 60 para 80 ou 100
         )
@@ -685,6 +874,8 @@ def atualizar_dashboard(
             text="Rotulo",
             title="",
         )
+
+        fig_transp = aplicar_tema_escuro(fig_transp)
 
         fig_transp.update_traces(
             textposition="outside", cliponaxis=False, marker_color="#E5007D"
@@ -720,22 +911,147 @@ def atualizar_dashboard(
 
         tabela = dff_base.copy()
 
-
         for coluna_data in [
-
             "DataColetadoTransportadora",
             "Data_Entrega",
             "Data_Prometida",
             "Data_Base",
-
         ]:
 
             if coluna_data in tabela.columns:
 
                 tabela[coluna_data] = pd.to_datetime(
-                    tabela[coluna_data],
-                    errors="coerce"
+                    tabela[coluna_data], errors="coerce"
                 ).dt.strftime("%d/%m/%y")
+
+        regiao_otd = (
+            base_otd.groupby("Região")["Status_Prazo"]
+            .apply(lambda x: x.eq("No Prazo").mean() * 100)
+            .reset_index(name="OTD")
+        )
+
+        fig_regiao_otd = px.bar(regiao_otd, x="Região", y="OTD", text="OTD")
+
+        fig_regiao_otd = aplicar_tema_escuro(fig_regiao_otd)
+
+        fig_regiao_otd.update_traces(texttemplate="%{y:.1f}%")
+
+        # TEMPORÁRIOS
+
+        uf_mapa = (
+            base_otd.groupby("UF_ENTREGA")["Status_Prazo"]
+            .apply(lambda x: x.eq("No Prazo").mean() * 100)
+            .reset_index(name="OTD")
+        )
+
+        uf_mapa["OTD"] = uf_mapa["OTD"].round(1)
+
+        uf_mapa["ROTULO"] = (
+            uf_mapa["UF_ENTREGA"] + "<br>" + uf_mapa["OTD"].astype(str) + "%"
+        )
+
+        coordenadas_uf = {
+            "AC": (-70.0, -9.0),
+            "AL": (-36.5, -9.6),
+            "AP": (-51.5, 1.0),
+            "AM": (-63.0, -4.0),
+            "BA": (-41.5, -12.5),
+            "CE": (-39.5, -5.0),
+            "DF": (-47.9, -15.8),
+            "ES": (-40.3, -19.5),
+            "GO": (-49.5, -16.0),
+            "MA": (-45.5, -5.0),
+            "MT": (-56.0, -13.0),
+            "MS": (-54.5, -20.5),
+            "MG": (-44.0, -18.5),
+            "PA": (-52.0, -3.5),
+            "PB": (-36.0, -7.0),
+            "PE": (-37.5, -8.5),
+            "PI": (-43.0, -7.0),
+            "PR": (-51.0, -24.5),
+            "RJ": (-43.5, -22.5),
+            "RN": (-36.5, -5.5),
+            "RO": (-63.0, -11.0),
+            "RR": (-61.5, 2.0),
+            "RS": (-53.0, -30.0),
+            "SC": (-50.0, -27.0),
+            "SE": (-37.3, -10.5),
+            "SP": (-48.0, -22.0),
+            "TO": (-48.3, -10.5),
+        }
+
+        mapa_otd_uf = px.choropleth(
+            uf_mapa,
+            geojson=geojson_brasil,
+            locations="UF_ENTREGA",
+            featureidkey="properties.SIGLA",
+            color="OTD",
+            color_continuous_scale=[
+                "#D32F2F",
+                "#F57C00",
+                "#FBC02D",
+                "#66BB6A",
+                "#2E7D32",
+            ],
+            hover_data={"UF_ENTREGA": True, "OTD": ":.1f"},
+        )
+
+        mapa_otd_uf.update_geos(
+            bgcolor="#28183A",
+            fitbounds="locations",
+            showcountries=False,
+            showcoastlines=False,
+            showland=False,
+            showframe=False,
+            visible=False,
+        )
+
+        mapa_otd_uf.update_layout(
+            height=750,
+            paper_bgcolor="#28183A",
+            plot_bgcolor="#28183A",
+            coloraxis_colorbar=dict(
+                title="OTD %",
+                tickfont=dict(color="white"),
+                title_font=dict(color="white"),
+            ),
+        )
+
+        for _, row in uf_mapa.iterrows():
+
+            uf = row["UF_ENTREGA"]
+
+            if uf in coordenadas_uf:
+
+                lon, lat = coordenadas_uf[uf]
+
+                mapa_otd_uf.add_trace(
+                    go.Scattergeo(
+                        lon=[lon],
+                        lat=[lat],
+                        mode="markers+text",
+                        marker=dict(
+                            symbol="circle",
+                            size=60,
+                            color="rgba(255,255,255,0.90)",
+                            line=dict(color="rgba(150,150,150,0.50)", width=1),
+                        ),
+                        text=[f"{uf} {row['OTD']:.0f}%"],
+                        textposition="middle center",
+                        textfont=dict(size=13, color="black"),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    )
+                )
+
+        mapa_otd_uf.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            height=700,
+        )
+
+        mapa_otd_transportadora = px.scatter(
+            x=[1], y=[1], title="Mapa Transportadora em construção"
+        )
 
         return (
             f"{total:,.0f}",
@@ -747,6 +1063,9 @@ def atualizar_dashboard(
             fig_canal,
             fig_uf,
             fig_transp,
+            mapa_otd_uf,
+            mapa_otd_transportadora,
+            fig_regiao_otd,
             tabela.to_dict("records"),
             [{"name": i, "id": i} for i in tabela.columns],
         )
@@ -764,8 +1083,4 @@ def atualizar_dashboard(
 # ==================================================
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=8050,
-        debug=False
-    )
+    app.run(host="0.0.0.0", port=8050, debug=False)
