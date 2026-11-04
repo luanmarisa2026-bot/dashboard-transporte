@@ -445,6 +445,23 @@ base_pedidos_tratada = base_pedidos_tratada.drop(
     columns=["CIDADE_ENTREGA", "Localidade", "Loja_Venda"], errors="ignore"
 )
 
+
+base_pedidos_tratada["Transportadora"] = (
+    base_pedidos_tratada["Transportadora"]
+    .astype(str)
+    .str.upper()
+    .replace(
+        {
+            "J&T EXPRESS": "J&T",
+            "ASAP LOG - LOGISTICA E SOLUCOES LTDA.": "ASAP",
+            "IMILE DELIVERY BRAZIL LIMITADA": "IMILE",
+            "MARKETPLACE": "MKTP",
+            "CORREIOS PAC": "CORREIO PAC",
+            "NHL LOGISTICA INTELIGENTE LTDA - EPP": "NHL",
+            "CORREIOS SEDEX": "SEDEX",
+        }
+    )
+)
 # ==================================================
 # SALVAR
 # ==================================================
