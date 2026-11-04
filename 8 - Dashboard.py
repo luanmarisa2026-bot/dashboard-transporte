@@ -32,11 +32,7 @@ with open(ARQUIVO_GEOJSON, encoding="utf-8") as f:
 df = pd.read_csv(ARQUIVO, sep=";", encoding="utf-8-sig")
 
 df["Status_Prazo"] = df["Status_Prazo"].fillna("Não Coletado")
-print("\nCOLUNAS ENCONTRADAS:")
-print(df.columns.tolist())
 
-print("\nTIPOS:")
-print(df.dtypes)
 # ==================================================
 # DATAS
 # ==================================================
@@ -48,11 +44,6 @@ for coluna in [
 ]:
     df[coluna] = pd.to_datetime(df[coluna], errors="coerce")
 
-print("\nDATAS")
-print(df["Data_Base"].dtype)
-print("Data_Base nulos:", df["Data_Base"].isna().sum())
-print("Lead_Time_Real nulos:", df["Lead_Time_Real"].isna().sum())
-print("Status_Prazo nulos:", df["Status_Prazo"].isna().sum())
 
 # ==================================================
 # APP
@@ -252,7 +243,7 @@ app.layout = dbc.Container(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Fulfillments",
+                                            "Pacotes",
                                             style={
                                                 "textAlign": "center",
                                                 "color": "white",
@@ -324,7 +315,7 @@ app.layout = dbc.Container(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Lead Time",
+                                            "Lead Time Médio",
                                             style={
                                                 "textAlign": "center",
                                                 "color": "white",
@@ -360,7 +351,7 @@ app.layout = dbc.Container(
                                 dbc.CardBody(
                                     [
                                         html.H6(
-                                            "Saldo SLA",
+                                            "Saldo Médio Lead Time",
                                             style={
                                                 "textAlign": "center",
                                                 "color": "white",
@@ -442,6 +433,25 @@ app.layout = dbc.Container(
                         "marginBottom": "15px",
                     },
                 ),
+                html.Div(
+                    [
+                        html.Div(
+                            "OTD por Transportadora",
+                            style=TITULO_GRAFICO,
+                        ),
+                        dcc.Graph(
+                            id="graf_otd_transportadora",
+                            config={"displayModeBar": False},
+                            style={"width": "100%"},
+                        ),
+                    ],
+                    style={
+                        "overflowX": "auto",
+                        "marginTop": "15px",
+                        "marginBottom": "15px",
+                    },
+                ),
+                html.Br(),
                 # LINHA 3
                 dbc.Row(
                     [
@@ -697,7 +707,7 @@ app.layout = dbc.Container(
     style={
         "backgroundColor": COR_FUNDO,
         "minHeight": "100vh",
-        "minWidth": "100vw",
+        "width": "100%",
         "paddingTop": "0px",
         "marginTop": "0px",
         "paddingBottom": "30px",
@@ -867,6 +877,7 @@ def atualizar_tabela(
         Output("graf_status", "figure"),
         Output("graf_canal", "figure"),
         Output("graf_uf", "figure"),
+        Output("graf_otd_transportadora", "figure"),
         Output("graf_transportadora", "figure"),
     ],
     [
@@ -1019,9 +1030,58 @@ def atualizar_dashboard(
             .head(15)
         )
 
+        transp_otd = (
+            base_otd.groupby("Transportadora")
+            .agg(
+                OTD=("Status_Prazo", lambda x: x.eq("No Prazo").mean() * 100),
+                Fulfillments=("Pedido_Fulfillment", "count"),
+            )
+            .reset_index()
+        )
+
+        transp_otd["OTD"] = transp_otd["OTD"].round(1)
+
+        transp_otd = transp_otd.sort_values("OTD", ascending=False)
+
         transp["Rotulo"] = transp["Fulfillments"].apply(
             lambda x: f"{x:,}".replace(",", ".")
         )
+
+        fig_otd_transportadora = px.bar(
+            transp_otd,
+            x="Transportadora",
+            y="OTD",
+            text="OTD",
+        )
+
+        fig_otd_transportadora.update_traces(
+            marker_color="#E5007D",
+            texttemplate="%{y:.1f}%",
+            textposition="outside",
+            cliponaxis=False,
+        )
+
+        fig_otd_transportadora.update_traces(width=0.45)
+
+        fig_otd_transportadora.update_layout(
+            autosize=True,
+            height=450,
+            bargap=0.08,
+            xaxis_title="",
+            yaxis_title="OTD %",
+            margin=dict(
+                t=80,
+                l=40,
+                r=40,
+                b=80,
+            ),
+        )
+
+        fig_otd_transportadora.update_yaxes(
+            range=[max(0, transp_otd["OTD"].min() - 5), 100]
+        )
+
+        fig_otd_transportadora = aplicar_tema_escuro(fig_otd_transportadora)
 
         fig_transp = px.bar(
             transp.sort_values("Fulfillments"),
@@ -1058,6 +1118,7 @@ def atualizar_dashboard(
             fig_status,
             fig_canal,
             fig_uf,
+            fig_otd_transportadora,
             fig_transp,
         )
 
@@ -1073,6 +1134,7 @@ def atualizar_dashboard(
             "Erro",
             "Erro",
             "Erro",
+            fig_vazia,
             fig_vazia,
             fig_vazia,
             fig_vazia,
@@ -1265,6 +1327,8 @@ def atualizar_geografia(
             title="OTD %",
             tickfont=dict(color="white"),
             title_font=dict(color="white"),
+            y=0.45,  # desce a barra
+            len=0.99,  # reduz altura
         ),
     )
 
