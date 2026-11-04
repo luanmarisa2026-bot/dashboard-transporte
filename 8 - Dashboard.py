@@ -15,7 +15,6 @@ import json
 # CARREGAMENTO
 # ==================================================
 
-
 PASTA_ATUAL = Path(__file__).parent
 ARQUIVO = PASTA_ATUAL / "5 - base_pedidos_tratada.csv"
 ARQUIVO_GEOJSON = PASTA_ATUAL / "brasil_estados.json"
