@@ -601,6 +601,7 @@ app.layout = dbc.Container(
                     sort_action="native",
                     sort_mode="multi",
                     page_size=20,
+                    page_action="native",
                     style_table={
                         "overflowX": "auto",
                         "minWidth": "100%",
@@ -1065,7 +1066,7 @@ def atualizar_dashboard(
             mapa_otd_uf,
             mapa_otd_transportadora,
             fig_regiao_otd,
-            tabela.to_dict("records"),
+            tabela.head(1000).to_dict("records"),
             [{"name": i, "id": i} for i in tabela.columns],
         )
 
