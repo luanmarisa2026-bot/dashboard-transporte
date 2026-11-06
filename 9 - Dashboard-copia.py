@@ -1,11 +1,19 @@
 import pandas as pd
+
 import traceback
+
 from dash import Dash, dcc, html, dash_table
+
 import dash_bootstrap_components as dbc
+
 import plotly.express as px
+
 import plotly.graph_objects as go
+
 from pathlib import Path
+
 import json
+
 from dash.dependencies import (
     Input,
     Output,
@@ -13,8 +21,11 @@ from dash.dependencies import (
 )
 
 # ==================================================
+
 # CARREGAMENTO
+
 # ==================================================
+
 
 PASTA_ATUAL = Path(__file__).parent
 
@@ -22,17 +33,24 @@ ARQUIVO = PASTA_ATUAL / "5 - base_pedidos_tratada.csv"
 
 ARQUIVO_GEOJSON = PASTA_ATUAL / "brasil_estados.json"
 
+
 with open(ARQUIVO_GEOJSON, encoding="utf-8") as f:
 
     geojson_brasil = json.load(f)
 
+
 df = pd.read_csv(ARQUIVO, sep=";", encoding="utf-8-sig")
+
 
 df["Status_Prazo"] = df["Status_Prazo"].fillna("Não Coletado")
 
+
 # ==================================================
+
 # DATAS
+
 # ==================================================
+
 
 for coluna in [
     "Data_Base",
@@ -42,15 +60,22 @@ for coluna in [
 
     df[coluna] = pd.to_datetime(df[coluna], errors="coerce")
 
+
 # ==================================================
+
 # APP
+
 # ==================================================
+
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+
 FILTROS_STORE = dcc.Store(id="filtros_globais")
 
+
 TEMA_STORE = dcc.Store(id="tema_dashboard", data="escuro")
+
 
 TEMAS = {
     "escuro": {
@@ -77,6 +102,7 @@ TEMAS = {
     },
 }
 
+
 TITULO_GRAFICO = {
     "backgroundColor": "#FF69B4",
     "color": "white",
@@ -88,10 +114,15 @@ TITULO_GRAFICO = {
     "borderTopRightRadius": "12px",
 }
 
+
 COR_FUNDO = "#28183A"
+
 COR_CARD = "#37224D"
+
 COR_TEXTO = "white"
+
 COR_BORDA = "#4D3766"
+
 
 ABAS = dbc.Tabs(
     [
@@ -151,6 +182,7 @@ ABAS = dbc.Tabs(
     active_tab="performance",
 )
 
+
 server = app.server
 
 
@@ -164,7 +196,9 @@ def atualizar_abas(tema):
 
 
 # ==================================================
+
 # LAYOUT
+
 # ==================================================
 
 
@@ -180,9 +214,11 @@ def aplicar_tema(fig, tema):
     )
 
     if tema == "escuro":
+
         grid = "rgba(255,255,255,0.10)"
 
     else:
+
         grid = "rgba(0,0,0,0.10)"
 
     fig.update_xaxes(gridcolor=grid, color=cores["texto"])
@@ -798,8 +834,11 @@ app.layout = dbc.Container(
     },
 )
 
+
 # ==================================================
+
 # CALLBACK
+
 # ==================================================
 
 
@@ -822,63 +861,159 @@ def atualizar_css_dropdown(tema):
 
     return html.Style(f"""
 
+
+
     html,
+
     body,
+
     #react-entry-point,
+
     #_dash-app-content,
+
     .container-fluid {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
+
+
 
     /* FUNDO DA PÁGINA */
+
+
+
     html {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
 
     body {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
 
     #react-entry-point {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
 
     ._dash-loading {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
 
     .container-fluid {{
-        background-color: {cores["fundo"]} !important;}}
+
+        background-color: {cores["fundo"]} !important;
+
+    }}
+
+
 
     /* DROPDOWNS */
+
+
+
     .Select-control {{
+
         background-color: {cores["input"]} !important;
+
         border: 1px solid {cores["borda"]} !important;
+
         color: {cores["texto"]} !important;
-        height: 38px !important;}}
+
+        height: 38px !important;
+
+    }}
+
+
 
     .Select-placeholder {{
-        color: {cores["texto"]} !important;}}
+
+        color: {cores["texto"]} !important;
+
+    }}
+
+
 
     .Select-value-label {{
-        color: {cores["texto"]} !important;}}
+
+        color: {cores["texto"]} !important;
+
+    }}
+
+
 
     .Select-menu-outer {{
-        background-color: {cores["card"]} !important;}}
+
+        background-color: {cores["card"]} !important;
+
+    }}
+
+
 
     /* DATE PICKER */
+
+
+
     .DateRangePickerInput {{
+
         background-color: {cores["input"]} !important;
+
         border: 1px solid {cores["borda"]} !important;
+
         border-radius: 4px !important;
-        height: 38px !important;}}
+
+        height: 38px !important;
+
+    }}
+
+
 
     .DateInput {{
-        background-color: {cores["input"]} !important;}}
+
+        background-color: {cores["input"]} !important;
+
+    }}
+
+
 
     .DateInput_input {{
+
         background-color: {cores["input"]} !important;
+
         color: {cores["texto"]} !important;
-        border-radius: 0px !important;}}
+
+        border-radius: 0px !important;
+
+    }}
+
+
 
     .DateRangePickerInput_arrow {{
-        color: {cores["texto"]} !important;}}
-        """)
+
+        color: {cores["texto"]} !important;
+
+    }}
+
+
+
+    """)
 
 
 @app.callback(
@@ -1804,5 +1939,4 @@ def atualizar_cores_tabs(tema):
 # ==================================================
 
 if __name__ == "__main__":
-
     app.run(host="0.0.0.0", port=8050, debug=False)

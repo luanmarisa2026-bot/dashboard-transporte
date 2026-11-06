@@ -80,7 +80,7 @@ TEMA_STORE = dcc.Store(id="tema_dashboard", data="escuro")
 TEMAS = {
     "escuro": {
         "fundo": "#28183A",
-        "card": "#37224D",
+        "card": "#FF69B4",
         "texto": "#FFFFFF",
         "texto2": "#757575",
         "borda": "#4D3766",
@@ -1935,12 +1935,8 @@ def atualizar_cores_tabs(tema):
 
 
 # ==================================================
-
 # EXECUÇÃO
-
 # ==================================================
 
-
 if __name__ == "__main__":
-
     app.run(host="0.0.0.0", port=8050, debug=False)
