@@ -53,8 +53,37 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 FILTROS_STORE = dcc.Store(id="filtros_globais")
 
+TEMA_STORE = dcc.Store(id="tema_dashboard", data="escuro")
+
+
+TEMAS = {
+    "escuro": {
+        "fundo": "#28183A",
+        "card": "#37224D",
+        "texto": "#FFFFFF",
+        "texto2": "#757575",
+        "borda": "#4D3766",
+        "magenta": "#FF69B4",
+        "linha_odd": "#332146",
+        "linha_even": "#28183A",
+        "input": "#37224D",
+    },
+    "claro": {
+        "fundo": "#F5F7FA",
+        "card": "#FFFFFF",
+        "texto": "#202020",
+        "texto2": "#757575",
+        "borda": "#DADADA",
+        "magenta": "#FF69B4",
+        "linha_odd": "#F7F7F7",
+        "linha_even": "#FFFFFF",
+        "input": "#FFFFFF",
+    },
+}
+
+
 TITULO_GRAFICO = {
-    "backgroundColor": "#E5007D",
+    "backgroundColor": "#FF69B4",
     "color": "white",
     "fontWeight": "bold",
     "fontSize": "18px",
@@ -76,15 +105,14 @@ ABAS = dbc.Tabs(
             label="Performance",
             tab_id="performance",
             label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             active_label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             tab_style={
-                "backgroundColor": COR_FUNDO,
                 "border": "none",
             },
         ),
@@ -92,19 +120,17 @@ ABAS = dbc.Tabs(
             label="Geografia OTD",
             tab_id="geografico",
             label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             active_label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             tab_style={
-                "backgroundColor": COR_FUNDO,
                 "border": "none",
             },
             active_tab_style={
-                "backgroundColor": COR_FUNDO,
                 "border": "none",
             },
         ),
@@ -112,19 +138,17 @@ ABAS = dbc.Tabs(
             label="Base de Dados",
             tab_id="base",
             label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             active_label_style={
-                "color": "#E5007D",
+                "color": "#FF69B4",
                 "fontWeight": "bold",
             },
             tab_style={
-                "backgroundColor": COR_FUNDO,
                 "border": "none",
             },
             active_tab_style={
-                "backgroundColor": COR_FUNDO,
                 "border": "none",
             },
         ),
@@ -135,22 +159,43 @@ ABAS = dbc.Tabs(
 
 server = app.server
 
+
+@app.callback(
+    Output("abas", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_abas(tema):
+
+    return {"backgroundColor": TEMAS[tema]["fundo"]}
+
+
 # ==================================================
 # LAYOUT
 # ==================================================
 
 
-def aplicar_tema_escuro(fig):
+def aplicar_tema(fig, tema):
+
+    cores = TEMAS[tema]
+
     fig.update_layout(
-        paper_bgcolor=COR_FUNDO,
-        plot_bgcolor=COR_FUNDO,
-        font=dict(color="white"),
-        legend=dict(font=dict(color="white")),
+        paper_bgcolor=cores["fundo"],
+        plot_bgcolor=cores["fundo"],
+        font=dict(color=cores["texto"]),
+        legend=dict(font=dict(color=cores["texto"])),
     )
 
-    fig.update_xaxes(gridcolor="rgba(255,255,255,0.1)", color="white")
+    if tema == "escuro":
 
-    fig.update_yaxes(gridcolor="rgba(255,255,255,0.1)", color="white")
+        grid = "rgba(255,255,255,0.10)"
+
+    else:
+
+        grid = "rgba(0,0,0,0.10)"
+
+    fig.update_xaxes(gridcolor=grid, color=cores["texto"])
+
+    fig.update_yaxes(gridcolor=grid, color=cores["texto"])
 
     return fig
 
@@ -158,10 +203,25 @@ def aplicar_tema_escuro(fig):
 app.layout = dbc.Container(
     [
         FILTROS_STORE,
+        TEMA_STORE,
+        html.Div(id="css_tema"),
+        dbc.Row(
+            dbc.Col(
+                dbc.Button(
+                    "🌙 / ☀️ Alterar Tema",
+                    id="btn_tema",
+                    n_clicks=0,
+                ),
+                width="auto",
+            ),
+            justify="end",
+            className="mt-2",
+        ),
         html.H2(
             "Performance Digital",
+            id="titulo_dashboard",
             className="text-center mt-3 mb-4",
-            style={"color": "white", "fontWeight": "bold"},
+            style={"fontWeight": "bold"},
         ),
         ABAS,
         html.Br(),
@@ -177,6 +237,9 @@ app.layout = dbc.Container(
                                 start_date=df["Data_Base"].min(),
                                 end_date=df["Data_Base"].max(),
                                 display_format="DD/MM/YYYY",
+                                style={
+                                    "width": "100%",
+                                },
                             ),
                             width=3,
                         ),
@@ -244,19 +307,10 @@ app.layout = dbc.Container(
                                     [
                                         html.H6(
                                             "Pacotes",
-                                            style={
-                                                "textAlign": "center",
-                                                "color": "white",
-                                            },
+                                            id="titulo_kpi_1",
                                         ),
                                         html.H3(
                                             id="kpi_fulfillments",
-                                            style={
-                                                "textAlign": "center",
-                                                "fontWeight": "bold",
-                                                "fontSize": "42px",
-                                                "color": "white",
-                                            },
                                         ),
                                     ],
                                     style={
@@ -266,6 +320,7 @@ app.layout = dbc.Container(
                                         "height": "120px",
                                     },
                                 ),
+                                id="card_kpi_1",
                                 style={
                                     "backgroundColor": COR_CARD,
                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
@@ -280,19 +335,10 @@ app.layout = dbc.Container(
                                     [
                                         html.H6(
                                             "OTD",
-                                            style={
-                                                "textAlign": "center",
-                                                "color": "white",
-                                            },
+                                            id="titulo_kpi_2",
                                         ),
                                         html.H3(
                                             id="kpi_otd",
-                                            style={
-                                                "textAlign": "center",
-                                                "fontWeight": "bold",
-                                                "fontSize": "42px",
-                                                "color": "white",
-                                            },
                                         ),
                                     ],
                                     style={
@@ -302,6 +348,7 @@ app.layout = dbc.Container(
                                         "height": "120px",
                                     },
                                 ),
+                                id="card_kpi_2",
                                 style={
                                     "backgroundColor": COR_CARD,
                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
@@ -316,19 +363,10 @@ app.layout = dbc.Container(
                                     [
                                         html.H6(
                                             "Lead Time Médio",
-                                            style={
-                                                "textAlign": "center",
-                                                "color": "white",
-                                            },
+                                            id="titulo_kpi_3",
                                         ),
                                         html.H3(
                                             id="kpi_lead",
-                                            style={
-                                                "textAlign": "center",
-                                                "fontWeight": "bold",
-                                                "fontSize": "42px",
-                                                "color": "white",
-                                            },
                                         ),
                                     ],
                                     style={
@@ -338,6 +376,7 @@ app.layout = dbc.Container(
                                         "height": "120px",
                                     },
                                 ),
+                                id="card_kpi_3",
                                 style={
                                     "backgroundColor": COR_CARD,
                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
@@ -352,19 +391,10 @@ app.layout = dbc.Container(
                                     [
                                         html.H6(
                                             "Saldo Médio Lead Time",
-                                            style={
-                                                "textAlign": "center",
-                                                "color": "white",
-                                            },
+                                            id="titulo_kpi_4",
                                         ),
                                         html.H3(
                                             id="kpi_saldo",
-                                            style={
-                                                "textAlign": "center",
-                                                "fontWeight": "bold",
-                                                "fontSize": "42px",
-                                                "color": "white",
-                                            },
                                         ),
                                     ],
                                     style={
@@ -374,6 +404,7 @@ app.layout = dbc.Container(
                                         "height": "120px",
                                     },
                                 ),
+                                id="card_kpi_4",
                                 style={
                                     "backgroundColor": COR_CARD,
                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
@@ -391,7 +422,11 @@ app.layout = dbc.Container(
                     [
                         dbc.Col(
                             [
-                                html.Div("Origem Faturamento", style=TITULO_GRAFICO),
+                                html.Div(
+                                    "Origem Faturamento",
+                                    id="titulo_origem",
+                                    style=TITULO_GRAFICO,
+                                ),
                                 dcc.Graph(
                                     id="graf_origem", config={"displayModeBar": False}
                                 ),
@@ -400,7 +435,11 @@ app.layout = dbc.Container(
                         ),
                         dbc.Col(
                             [
-                                html.Div("Status Prazo", style=TITULO_GRAFICO),
+                                html.Div(
+                                    "Status Prazo",
+                                    id="titulo_status",
+                                    style=TITULO_GRAFICO,
+                                ),
                                 dcc.Graph(
                                     id="graf_status", config={"displayModeBar": False}
                                 ),
@@ -409,7 +448,9 @@ app.layout = dbc.Container(
                         ),
                         dbc.Col(
                             [
-                                html.Div("Canal", style=TITULO_GRAFICO),
+                                html.Div(
+                                    "Canal", id="titulo_canal", style=TITULO_GRAFICO
+                                ),
                                 dcc.Graph(
                                     id="graf_canal", config={"displayModeBar": False}
                                 ),
@@ -420,7 +461,7 @@ app.layout = dbc.Container(
                 ),
                 html.Div(
                     [
-                        html.Div("OTD por UF", style=TITULO_GRAFICO),
+                        html.Div("OTD por UF", id="titulo_uf", style=TITULO_GRAFICO),
                         dcc.Graph(
                             id="graf_uf",
                             config={"displayModeBar": False},
@@ -437,6 +478,7 @@ app.layout = dbc.Container(
                     [
                         html.Div(
                             "OTD por Transportadora",
+                            id="titulo_otd_transportadora",
                             style=TITULO_GRAFICO,
                         ),
                         dcc.Graph(
@@ -457,7 +499,11 @@ app.layout = dbc.Container(
                     [
                         dbc.Col(
                             [
-                                html.Div("Top Transportadoras", style=TITULO_GRAFICO),
+                                html.Div(
+                                    "Top Transportadoras",
+                                    id="titulo_top_transportadora",
+                                    style=TITULO_GRAFICO,
+                                ),
                                 dcc.Graph(
                                     id="graf_transportadora",
                                     config={"displayModeBar": False},
@@ -476,11 +522,16 @@ app.layout = dbc.Container(
                 dbc.Row(
                     [
                         dbc.Col(
-                            dcc.DatePickerRange(
-                                id="geo_data",
-                                start_date=df["Data_Base"].min(),
-                                end_date=df["Data_Base"].max(),
-                                display_format="DD/MM/YYYY",
+                            html.Div(
+                                dcc.DatePickerRange(
+                                    id="geo_data",
+                                    start_date=df["Data_Base"].min(),
+                                    end_date=df["Data_Base"].max(),
+                                    display_format="DD/MM/YYYY",
+                                ),
+                                style={
+                                    "width": "100%",
+                                },
                             ),
                             width=3,
                         ),
@@ -546,6 +597,7 @@ app.layout = dbc.Container(
                             [
                                 html.Div(
                                     "OTD Geral por UF",
+                                    id="titulo_mapa",
                                     style=TITULO_GRAFICO,
                                 ),
                                 dcc.Graph(
@@ -563,18 +615,21 @@ app.layout = dbc.Container(
                             [
                                 html.Div(
                                     "OTD por Região",
+                                    id="titulo_regiao",
                                     style=TITULO_GRAFICO,
                                 ),
                                 dcc.Graph(id="graf_regiao_otd"),
                                 html.Br(),
                                 html.Div(
                                     "OTD Transportadora x Região",
+                                    id="titulo_heat_regiao",
                                     style=TITULO_GRAFICO,
                                 ),
                                 dcc.Graph(id="heatmap_regiao_transportadora"),
                                 html.Br(),
                                 html.Div(
                                     "OTD Transportadora x UF",
+                                    id="titulo_heat_uf",
                                     style=TITULO_GRAFICO,
                                 ),
                                 dcc.Graph(id="heatmap_uf_transportadora"),
@@ -672,15 +727,6 @@ app.layout = dbc.Container(
                         "minWidth": "100%",
                         "maxWidth": "100%",
                     },
-                    style_cell={
-                        "backgroundColor": COR_CARD,
-                        "color": "white",
-                        "textAlign": "left",
-                        "fontSize": 12,
-                        "minWidth": "150px",
-                        "width": "150px",
-                        "maxWidth": "300px",
-                    },
                     style_data_conditional=[
                         {
                             "if": {"row_index": "odd"},
@@ -694,7 +740,7 @@ app.layout = dbc.Container(
                         },
                     ],
                     style_header={
-                        "backgroundColor": "#E5007D",
+                        "backgroundColor": "#FF69B4",
                         "color": "white",
                         "fontWeight": "bold",
                         "textAlign": "center",
@@ -703,9 +749,9 @@ app.layout = dbc.Container(
             ],
         ),
     ],
+    id="container_principal",
     fluid=True,
     style={
-        "backgroundColor": COR_FUNDO,
         "minHeight": "100vh",
         "width": "100%",
         "paddingTop": "0px",
@@ -718,6 +764,107 @@ app.layout = dbc.Container(
 # ==================================================
 # CALLBACK
 # ==================================================
+
+
+@app.callback(
+    Output("css_tema", "children"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_css_dropdown(tema):
+
+    cores = TEMAS[tema]
+
+    return html.Style(f"""
+
+    html,
+    body,
+    #react-entry-point,
+    #_dash-app-content,
+    .container-fluid {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+
+    /* FUNDO DA PÁGINA */
+
+    html {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+    body {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+    #react-entry-point {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+    ._dash-loading {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+    .container-fluid {{
+        background-color: {cores["fundo"]} !important;
+    }}
+
+    /* DROPDOWNS */
+
+    .Select-control {{
+        background-color: {cores["input"]} !important;
+        border: 1px solid {cores["borda"]} !important;
+        color: {cores["texto"]} !important;
+        height: 38px !important;
+    }}
+
+    .Select-placeholder {{
+        color: {cores["texto"]} !important;
+    }}
+
+    .Select-value-label {{
+        color: {cores["texto"]} !important;
+    }}
+
+    .Select-menu-outer {{
+        background-color: {cores["card"]} !important;
+    }}
+
+    /* DATE PICKER */
+
+    .DateRangePickerInput {{
+        background-color: {cores["input"]} !important;
+        border: 1px solid {cores["borda"]} !important;
+        border-radius: 4px !important;
+        height: 38px !important;
+    }}
+
+    .DateInput {{
+        background-color: {cores["input"]} !important;
+    }}
+
+    .DateInput_input {{
+        background-color: {cores["input"]} !important;
+        color: {cores["texto"]} !important;
+        border-radius: 0px !important;
+    }}
+
+    .DateRangePickerInput_arrow {{
+        color: {cores["texto"]} !important;
+    }}
+
+    """)
+
+
+@app.callback(
+    Output("tema_dashboard", "data"),
+    Input("btn_tema", "n_clicks"),
+    State("tema_dashboard", "data"),
+)
+def trocar_tema(n_clicks, tema):
+
+    if not n_clicks:
+        return tema
+
+    return "claro" if tema == "escuro" else "escuro"
 
 
 @app.callback(
@@ -784,27 +931,25 @@ def atualizar_filtros_geo(data):
     Output("aba_geografico", "style"),
     Output("aba_base", "style"),
     Input("abas", "active_tab"),
+    Input("tema_dashboard", "data"),
 )
-def trocar_aba(aba):
+def trocar_aba(aba, tema):
 
-    if aba == "performance":
-        return (
-            {"display": "block"},
-            {"display": "none"},
-            {"display": "none"},
-        )
-
-    elif aba == "geografico":
-        return (
-            {"display": "none"},
-            {"display": "block"},
-            {"display": "none"},
-        )
+    fundo = TEMAS[tema]["fundo"]
 
     return (
-        {"display": "none"},
-        {"display": "none"},
-        {"display": "block"},
+        {
+            "display": "block" if aba == "performance" else "none",
+            "backgroundColor": fundo,
+        },
+        {
+            "display": "block" if aba == "geografico" else "none",
+            "backgroundColor": fundo,
+        },
+        {
+            "display": "block" if aba == "base" else "none",
+            "backgroundColor": fundo,
+        },
     )
 
 
@@ -887,6 +1032,7 @@ def atualizar_tabela(
         Input("filtro_origem", "value"),
         Input("filtro_transportadora", "value"),
         Input("filtro_uf", "value"),
+        Input("tema_dashboard", "data"),
     ],
 )
 def atualizar_dashboard(
@@ -896,6 +1042,7 @@ def atualizar_dashboard(
     origem,
     transportadora,
     uf,
+    tema,
 ):
 
     try:
@@ -945,11 +1092,12 @@ def atualizar_dashboard(
             },
         )
 
-        fig_origem = aplicar_tema_escuro(fig_origem)
-        fig_origem.update_traces(textfont=dict(color="white"))
+        fig_origem = aplicar_tema(fig_origem, tema)
+
+        fig_origem.update_traces(textfont=dict(color=TEMAS[tema]["texto"]))
 
         fig_origem.update_layout(
-            paper_bgcolor=COR_FUNDO,
+            paper_bgcolor=TEMAS[tema]["fundo"],
         )
 
         dff["Status_Prazo_Ajustado"] = dff["Status_Prazo"].fillna("Não Coletado")
@@ -967,8 +1115,8 @@ def atualizar_dashboard(
             },
         )
 
-        fig_status = aplicar_tema_escuro(fig_status)
-        fig_status.update_traces(textfont=dict(color="white"))
+        fig_status = aplicar_tema(fig_status, tema)
+        fig_status.update_traces(textfont=dict(color=TEMAS[tema]["texto"]))
 
         canal_df = dff.groupby("Canal").size().reset_index(name="Fulfillments")
 
@@ -984,9 +1132,11 @@ def atualizar_dashboard(
             title="",
         )
 
-        fig_canal = aplicar_tema_escuro(fig_canal)
+        fig_canal = aplicar_tema(fig_canal, tema)
 
-        fig_canal.update_traces(textposition="outside", textfont=dict(color="white"))
+        fig_canal.update_traces(
+            textposition="outside", textfont=dict(color=TEMAS[tema]["texto"])
+        )
 
         uf_otd = (
             base_otd.groupby("UF_ENTREGA")["Status_Prazo"]
@@ -1007,15 +1157,15 @@ def atualizar_dashboard(
             title="",
         )
 
-        fig_uf = aplicar_tema_escuro(fig_uf)
+        fig_uf = aplicar_tema(fig_uf, tema)
 
         fig_uf.update_traces(texttemplate="%{y:.1f}%", textposition="top center")
 
         fig_uf.update_layout(
             width=max(len(uf_otd) * 80, 1800),
             height=500,
-            plot_bgcolor=COR_FUNDO,
-            paper_bgcolor=COR_FUNDO,
+            plot_bgcolor=TEMAS[tema]["fundo"],
+            paper_bgcolor=TEMAS[tema]["fundo"],
             hovermode="x unified",
             margin=dict(t=80, l=60, r=30, b=60),  # aumente de 60 para 80 ou 100
         )
@@ -1055,7 +1205,7 @@ def atualizar_dashboard(
         )
 
         fig_otd_transportadora.update_traces(
-            marker_color="#E5007D",
+            marker_color=TEMAS[tema]["magenta"],
             texttemplate="%{y:.1f}%",
             textposition="outside",
             cliponaxis=False,
@@ -1081,7 +1231,7 @@ def atualizar_dashboard(
             range=[max(0, transp_otd["OTD"].min() - 5), 100]
         )
 
-        fig_otd_transportadora = aplicar_tema_escuro(fig_otd_transportadora)
+        fig_otd_transportadora = aplicar_tema(fig_otd_transportadora, tema)
 
         fig_transp = px.bar(
             transp.sort_values("Fulfillments"),
@@ -1092,10 +1242,12 @@ def atualizar_dashboard(
             title="",
         )
 
-        fig_transp = aplicar_tema_escuro(fig_transp)
+        fig_transp = aplicar_tema(fig_transp, tema)
 
         fig_transp.update_traces(
-            textposition="outside", cliponaxis=False, marker_color="#E5007D"
+            textposition="outside",
+            cliponaxis=False,
+            marker_color=TEMAS[tema]["magenta"],
         )
 
         fig_transp.update_layout(
@@ -1154,6 +1306,7 @@ def atualizar_dashboard(
     Input("geo_origem", "value"),
     Input("geo_transportadora", "value"),
     Input("geo_uf", "value"),
+    Input("tema_dashboard", "data"),
 )
 def atualizar_geografia(
     start_date,
@@ -1162,6 +1315,7 @@ def atualizar_geografia(
     origem,
     transportadora,
     uf,
+    tema,
 ):
 
     dff = df.copy()
@@ -1199,7 +1353,7 @@ def atualizar_geografia(
 
     fig_regiao_otd = px.bar(regiao_otd, x="Região", y="OTD", text="OTD")
 
-    fig_regiao_otd = aplicar_tema_escuro(fig_regiao_otd)
+    fig_regiao_otd = aplicar_tema(fig_regiao_otd, tema)
 
     fig_regiao_otd.update_traces(texttemplate="%{y:.1f}%")
 
@@ -1217,6 +1371,8 @@ def atualizar_geografia(
         heat_regiao, text_auto=".1f", color_continuous_scale="RdYlGn", aspect="auto"
     )
 
+    fig_heat_regiao = aplicar_tema(fig_heat_regiao, tema)
+
     fig_heat_regiao.update_xaxes(side="top")
 
     fig_heat_regiao.update_layout(height=600, xaxis_title="", yaxis_title="")
@@ -1225,7 +1381,7 @@ def atualizar_geografia(
 
     fig_heat_regiao.update_yaxes(tickfont=dict(size=11))
 
-    fig_heat_regiao = aplicar_tema_escuro(fig_heat_regiao)
+    fig_heat_regiao.update_traces(textfont={"color": TEMAS[tema]["texto"]})
 
     fig_heat_regiao.update_layout(height=600)
 
@@ -1241,13 +1397,15 @@ def atualizar_geografia(
         heat_uf, text_auto=".1f", color_continuous_scale="RdYlGn", aspect="auto"
     )
 
+    fig_heat_uf = aplicar_tema(fig_heat_uf, tema)
+
     fig_heat_uf.update_layout(height=900, xaxis_title="", yaxis_title="")
 
     fig_heat_uf.update_xaxes(side="top", tickangle=0)
 
     fig_heat_uf.update_yaxes(tickfont=dict(size=10))
 
-    fig_heat_uf = aplicar_tema_escuro(fig_heat_uf)
+    fig_heat_uf.update_traces(textfont={"color": TEMAS[tema]["texto"]})
 
     fig_heat_uf.update_layout(height=500)
 
@@ -1310,7 +1468,9 @@ def atualizar_geografia(
     )
 
     mapa_otd_uf.update_geos(
-        bgcolor="#28183A",
+        bgcolor=TEMAS[tema]["fundo"],
+        lakecolor=TEMAS[tema]["fundo"],
+        landcolor=TEMAS[tema]["fundo"],
         fitbounds="locations",
         showcountries=False,
         showcoastlines=False,
@@ -1321,12 +1481,12 @@ def atualizar_geografia(
 
     mapa_otd_uf.update_layout(
         height=750,
-        paper_bgcolor="#28183A",
-        plot_bgcolor="#28183A",
+        paper_bgcolor=TEMAS[tema]["fundo"],
+        plot_bgcolor=TEMAS[tema]["fundo"],
         coloraxis_colorbar=dict(
             title="OTD %",
-            tickfont=dict(color="white"),
-            title_font=dict(color="white"),
+            tickfont=dict(color=TEMAS[tema]["texto"]),
+            title_font=dict(color=TEMAS[tema]["texto"]),
             y=0.45,  # desce a barra
             len=0.99,  # reduz altura
         ),
@@ -1348,7 +1508,11 @@ def atualizar_geografia(
                     marker=dict(
                         symbol="circle",
                         size=60,
-                        color="rgba(255,255,255,0.90)",
+                        color=(
+                            TEMAS["claro"]["card"]
+                            if tema == "escuro"
+                            else TEMAS["escuro"]["card"]
+                        ),
                         line=dict(
                             color="rgba(150,150,150,0.50)",
                             width=1,
@@ -1358,7 +1522,7 @@ def atualizar_geografia(
                     textposition="middle center",
                     textfont=dict(
                         size=13,
-                        color="black",
+                        color="#202020" if tema == "escuro" else "#FFFFFF",
                     ),
                     showlegend=False,
                     hoverinfo="skip",
@@ -1381,6 +1545,211 @@ def atualizar_geografia(
         fig_heat_regiao,
         fig_heat_uf,
     )
+
+
+@app.callback(
+    Output("titulo_dashboard", "style"),
+    Output("titulo_kpi_1", "style"),
+    Output("titulo_kpi_2", "style"),
+    Output("titulo_kpi_3", "style"),
+    Output("titulo_kpi_4", "style"),
+    Output("kpi_fulfillments", "style"),
+    Output("kpi_otd", "style"),
+    Output("kpi_lead", "style"),
+    Output("kpi_saldo", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_textos(tema):
+
+    cor = TEMAS[tema]["texto"]
+
+    estilo_titulo = {
+        "color": cor,
+        "fontWeight": "bold",
+    }
+
+    estilo_h6 = {
+        "textAlign": "center",
+        "color": cor,
+    }
+
+    estilo_kpi = {
+        "textAlign": "center",
+        "fontWeight": "bold",
+        "fontSize": "42px",
+        "color": cor,
+    }
+
+    return (
+        estilo_titulo,
+        estilo_h6,
+        estilo_h6,
+        estilo_h6,
+        estilo_h6,
+        estilo_kpi,
+        estilo_kpi,
+        estilo_kpi,
+        estilo_kpi,
+    )
+
+
+@app.callback(
+    Output("tabela", "style_table"),
+    Output("tabela", "style_cell"),
+    Output("tabela", "style_data_conditional"),
+    Output("tabela", "style_header"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_tabela_tema(tema):
+
+    return (
+        {
+            "overflowX": "auto",
+            "minWidth": "100%",
+            "maxWidth": "100%",
+            "backgroundColor": TEMAS[tema]["fundo"],
+        },
+        {
+            "backgroundColor": TEMAS[tema]["card"],
+            "color": TEMAS[tema]["texto"],
+            "textAlign": "left",
+            "fontSize": 12,
+            "minWidth": "150px",
+            "width": "150px",
+            "maxWidth": "300px",
+        },
+        [
+            {
+                "if": {"row_index": "odd"},
+                "backgroundColor": TEMAS[tema]["linha_odd"],
+                "color": TEMAS[tema]["texto"],
+            },
+            {
+                "if": {"row_index": "even"},
+                "backgroundColor": TEMAS[tema]["linha_even"],
+                "color": TEMAS[tema]["texto"],
+            },
+        ],
+        {
+            "backgroundColor": TEMAS[tema]["magenta"],
+            "color": "white",
+            "fontWeight": "bold",
+            "textAlign": "center",
+        },
+    )
+
+
+@app.callback(
+    Output("card_kpi_1", "style"),
+    Output("card_kpi_2", "style"),
+    Output("card_kpi_3", "style"),
+    Output("card_kpi_4", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_cards(tema):
+
+    estilo = {
+        "backgroundColor": TEMAS[tema]["card"],
+        "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+        "borderRadius": "12px",
+        "border": f"1px solid {TEMAS[tema]['borda']}",
+    }
+
+    return estilo, estilo, estilo, estilo
+
+
+@app.callback(
+    Output("btn_tema", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_botao_tema(tema):
+
+    return {
+        "backgroundColor": TEMAS[tema]["input"],
+        "color": TEMAS[tema]["texto"],
+        "border": f"1px solid {TEMAS[tema]['borda']}",
+        "height": "38px",
+        "padding": "0px 15px",
+        "borderRadius": "4px",
+        "fontWeight": "500",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+    }
+
+
+@app.callback(
+    Output("titulo_origem", "style"),
+    Output("titulo_status", "style"),
+    Output("titulo_canal", "style"),
+    Output("titulo_uf", "style"),
+    Output("titulo_otd_transportadora", "style"),
+    Output("titulo_top_transportadora", "style"),
+    Output("titulo_mapa", "style"),
+    Output("titulo_regiao", "style"),
+    Output("titulo_heat_regiao", "style"),
+    Output("titulo_heat_uf", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_titulos(tema):
+
+    estilo = {
+        "backgroundColor": TEMAS[tema]["magenta"],
+        "color": "white",
+        "fontWeight": "bold",
+        "fontSize": "18px",
+        "textAlign": "center",
+        "padding": "10px",
+        "borderTopLeftRadius": "12px",
+        "borderTopRightRadius": "12px",
+    }
+
+    return (estilo,) * 10
+
+
+@app.callback(
+    Output("filtro_data", "style"),
+    Output("geo_data", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_datas(tema):
+
+    return (
+        {
+            "width": "100%",
+        },
+        {
+            "width": "100%",
+        },
+    )
+
+
+@app.callback(
+    Output("container_principal", "style"),
+    Input("tema_dashboard", "data"),
+)
+def atualizar_container(tema):
+
+    return {
+        "backgroundColor": TEMAS[tema]["fundo"],
+        "color": TEMAS[tema]["texto2"],
+        "minHeight": "100vh",
+        "width": "100%",
+        "paddingTop": "0px",
+        "marginTop": "0px",
+        "paddingBottom": "30px",
+        "transition": "0.3s",
+    }
+
+
+@app.callback(Output("abas", "colors"), Input("tema_dashboard", "data"))
+def atualizar_cores_tabs(tema):
+
+    return {
+        "border": TEMAS[tema]["borda"],
+        "primary": TEMAS[tema]["magenta"],
+        "background": TEMAS[tema]["fundo"],
+    }
 
 
 # ==================================================
