@@ -1,12 +1,15 @@
 import pandas as pd
+
 import traceback
 
 from dash import Dash, dcc, html, dash_table
-from dash.dependencies import Input, Output
 
 import dash_bootstrap_components as dbc
+
 import plotly.express as px
+
 import plotly.graph_objects as go
+
 from pathlib import Path
 
 import json
@@ -18,40 +21,58 @@ from dash.dependencies import (
 )
 
 # ==================================================
+
 # CARREGAMENTO
+
 # ==================================================
 
+
 PASTA_ATUAL = Path(__file__).parent
+
 ARQUIVO = PASTA_ATUAL / "5 - base_pedidos_tratada.csv"
+
 ARQUIVO_GEOJSON = PASTA_ATUAL / "brasil_estados.json"
 
+
 with open(ARQUIVO_GEOJSON, encoding="utf-8") as f:
+
     geojson_brasil = json.load(f)
 
 
 df = pd.read_csv(ARQUIVO, sep=";", encoding="utf-8-sig")
 
+
 df["Status_Prazo"] = df["Status_Prazo"].fillna("Não Coletado")
 
+
 # ==================================================
+
 # DATAS
+
 # ==================================================
+
 
 for coluna in [
     "Data_Base",
     "Data_Entrega",
     "DataColetadoTransportadora",
 ]:
+
     df[coluna] = pd.to_datetime(df[coluna], errors="coerce")
 
 
 # ==================================================
+
 # APP
+
 # ==================================================
+
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+
 FILTROS_STORE = dcc.Store(id="filtros_globais")
+
 
 TEMA_STORE = dcc.Store(id="tema_dashboard", data="escuro")
 
@@ -93,9 +114,13 @@ TITULO_GRAFICO = {
     "borderTopRightRadius": "12px",
 }
 
+
 COR_FUNDO = "#28183A"
+
 COR_CARD = "#37224D"
+
 COR_TEXTO = "white"
+
 COR_BORDA = "#4D3766"
 
 
@@ -157,6 +182,7 @@ ABAS = dbc.Tabs(
     active_tab="performance",
 )
 
+
 server = app.server
 
 
@@ -170,7 +196,9 @@ def atualizar_abas(tema):
 
 
 # ==================================================
+
 # LAYOUT
+
 # ==================================================
 
 
@@ -204,549 +232,595 @@ app.layout = dbc.Container(
     [
         FILTROS_STORE,
         TEMA_STORE,
-        html.Div(id="css_tema"),
-        dbc.Row(
-            dbc.Col(
-                dbc.Button(
-                    "🌙 / ☀️ Alterar Tema",
-                    id="btn_tema",
-                    n_clicks=0,
-                ),
-                width="auto",
-            ),
-            justify="end",
-            className="mt-2",
-        ),
-        html.H2(
-            "Performance Digital",
-            id="titulo_dashboard",
-            className="text-center mt-3 mb-4",
-            style={"fontWeight": "bold"},
-        ),
-        ABAS,
-        html.Br(),
-        html.Div(
-            id="aba_performance",
-            children=[
-                # FILTROS
-                dbc.Row(
-                    [
+        dcc.Loading(
+            id="loading-tema",
+            type="circle",
+            fullscreen=True,
+            children=html.Div(
+                id="conteudo_dashboard",
+                children=[
+                    html.Div(id="css_tema"),
+                    html.Div(style={"height": "20px"}),
+                    dbc.Row(
                         dbc.Col(
-                            dcc.DatePickerRange(
-                                id="filtro_data",
-                                start_date=df["Data_Base"].min(),
-                                end_date=df["Data_Base"].max(),
-                                display_format="DD/MM/YYYY",
-                                style={
-                                    "width": "100%",
-                                },
+                            dbc.Button(
+                                "🌙 / ☀️ Alterar Tema",
+                                id="btn_tema",
+                                n_clicks=0,
                             ),
-                            width=3,
+                            width="auto",
                         ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="filtro_canal",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["Canal"].dropna().unique())
+                        justify="end",
+                    ),
+                    html.H2(
+                        "Performance Digital",
+                        id="titulo_dashboard",
+                        className="text-center mt-3 mb-4",
+                        style={"fontWeight": "bold"},
+                    ),
+                    ABAS,
+                    html.Br(),
+                    html.Div(
+                        id="aba_performance",
+                        children=[
+                            # FILTROS
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.DatePickerRange(
+                                            id="filtro_data",
+                                            start_date=df["Data_Base"].min(),
+                                            end_date=df["Data_Base"].max(),
+                                            display_format="DD/MM/YYYY",
+                                            style={
+                                                "width": "100%",
+                                            },
+                                        ),
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="filtro_canal",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Canal"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Canal",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="filtro_origem",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Origem_Faturamento"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Origem",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="filtro_transportadora",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Transportadora"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Transportadora",
+                                        ),
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="filtro_uf",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["UF_ENTREGA"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="UF",
+                                        ),
+                                        width=2,
+                                    ),
                                 ],
-                                multi=True,
-                                placeholder="Canal",
+                                className="justify-content-center align-items-center g-3",
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="filtro_origem",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Origem_Faturamento"].dropna().unique()
-                                    )
+                            html.Div(style={"height": "20px"}),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Card(
+                                            dbc.CardBody(
+                                                [
+                                                    html.H6(
+                                                        "Pacotes",
+                                                        id="titulo_kpi_1",
+                                                    ),
+                                                    html.H3(
+                                                        id="kpi_fulfillments",
+                                                    ),
+                                                ],
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "column",
+                                                    "justifyContent": "center",
+                                                    "height": "120px",
+                                                },
+                                            ),
+                                            id="card_kpi_1",
+                                            style={
+                                                "backgroundColor": COR_CARD,
+                                                "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+                                                "borderRadius": "12px",
+                                                "border": f"1px solid {COR_BORDA}",
+                                            },
+                                        )
+                                    ),
+                                    dbc.Col(
+                                        dbc.Card(
+                                            dbc.CardBody(
+                                                [
+                                                    html.H6(
+                                                        "OTD",
+                                                        id="titulo_kpi_2",
+                                                    ),
+                                                    html.H3(
+                                                        id="kpi_otd",
+                                                    ),
+                                                ],
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "column",
+                                                    "justifyContent": "center",
+                                                    "height": "120px",
+                                                },
+                                            ),
+                                            id="card_kpi_2",
+                                            style={
+                                                "backgroundColor": COR_CARD,
+                                                "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+                                                "borderRadius": "12px",
+                                                "border": f"1px solid {COR_BORDA}",
+                                            },
+                                        )
+                                    ),
+                                    dbc.Col(
+                                        dbc.Card(
+                                            dbc.CardBody(
+                                                [
+                                                    html.H6(
+                                                        "Lead Time Médio",
+                                                        id="titulo_kpi_3",
+                                                    ),
+                                                    html.H3(
+                                                        id="kpi_lead",
+                                                    ),
+                                                ],
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "column",
+                                                    "justifyContent": "center",
+                                                    "height": "120px",
+                                                },
+                                            ),
+                                            id="card_kpi_3",
+                                            style={
+                                                "backgroundColor": COR_CARD,
+                                                "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+                                                "borderRadius": "12px",
+                                                "border": f"1px solid {COR_BORDA}",
+                                            },
+                                        )
+                                    ),
+                                    dbc.Col(
+                                        dbc.Card(
+                                            dbc.CardBody(
+                                                [
+                                                    html.H6(
+                                                        "Saldo Médio Lead Time",
+                                                        id="titulo_kpi_4",
+                                                    ),
+                                                    html.H3(
+                                                        id="kpi_saldo",
+                                                    ),
+                                                ],
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "column",
+                                                    "justifyContent": "center",
+                                                    "height": "120px",
+                                                },
+                                            ),
+                                            id="card_kpi_4",
+                                            style={
+                                                "backgroundColor": COR_CARD,
+                                                "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
+                                                "borderRadius": "12px",
+                                                "border": f"1px solid {COR_BORDA}",
+                                            },
+                                        )
+                                    ),
                                 ],
-                                multi=True,
-                                placeholder="Origem",
+                                className="justify-content-center",
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="filtro_transportadora",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Transportadora"].dropna().unique()
-                                    )
-                                ],
-                                multi=True,
-                                placeholder="Transportadora",
+                            html.Br(),
+                            # LINHA 1
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "Origem Faturamento",
+                                                id="titulo_origem",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="graf_origem",
+                                                config={"displayModeBar": False},
+                                            ),
+                                        ],
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "Status Prazo",
+                                                id="titulo_status",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="graf_status",
+                                                config={"displayModeBar": False},
+                                            ),
+                                        ],
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "Canal",
+                                                id="titulo_canal",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="graf_canal",
+                                                config={"displayModeBar": False},
+                                            ),
+                                        ],
+                                        width=4,
+                                    ),
+                                ]
                             ),
-                            width=3,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="filtro_uf",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["UF_ENTREGA"].dropna().unique())
-                                ],
-                                multi=True,
-                                placeholder="UF",
-                            ),
-                            width=2,
-                        ),
-                    ],
-                    className="justify-content-center align-items-center g-3",
-                ),
-                html.Div(style={"height": "20px"}),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H6(
-                                            "Pacotes",
-                                            id="titulo_kpi_1",
-                                        ),
-                                        html.H3(
-                                            id="kpi_fulfillments",
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "flexDirection": "column",
-                                        "justifyContent": "center",
-                                        "height": "120px",
-                                    },
-                                ),
-                                id="card_kpi_1",
-                                style={
-                                    "backgroundColor": COR_CARD,
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
-                                    "borderRadius": "12px",
-                                    "border": f"1px solid {COR_BORDA}",
-                                },
-                            )
-                        ),
-                        dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H6(
-                                            "OTD",
-                                            id="titulo_kpi_2",
-                                        ),
-                                        html.H3(
-                                            id="kpi_otd",
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "flexDirection": "column",
-                                        "justifyContent": "center",
-                                        "height": "120px",
-                                    },
-                                ),
-                                id="card_kpi_2",
-                                style={
-                                    "backgroundColor": COR_CARD,
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
-                                    "borderRadius": "12px",
-                                    "border": f"1px solid {COR_BORDA}",
-                                },
-                            )
-                        ),
-                        dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H6(
-                                            "Lead Time Médio",
-                                            id="titulo_kpi_3",
-                                        ),
-                                        html.H3(
-                                            id="kpi_lead",
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "flexDirection": "column",
-                                        "justifyContent": "center",
-                                        "height": "120px",
-                                    },
-                                ),
-                                id="card_kpi_3",
-                                style={
-                                    "backgroundColor": COR_CARD,
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
-                                    "borderRadius": "12px",
-                                    "border": f"1px solid {COR_BORDA}",
-                                },
-                            )
-                        ),
-                        dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H6(
-                                            "Saldo Médio Lead Time",
-                                            id="titulo_kpi_4",
-                                        ),
-                                        html.H3(
-                                            id="kpi_saldo",
-                                        ),
-                                    ],
-                                    style={
-                                        "display": "flex",
-                                        "flexDirection": "column",
-                                        "justifyContent": "center",
-                                        "height": "120px",
-                                    },
-                                ),
-                                id="card_kpi_4",
-                                style={
-                                    "backgroundColor": COR_CARD,
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.30)",
-                                    "borderRadius": "12px",
-                                    "border": f"1px solid {COR_BORDA}",
-                                },
-                            )
-                        ),
-                    ],
-                    className="justify-content-center",
-                ),
-                html.Br(),
-                # LINHA 1
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "Origem Faturamento",
-                                    id="titulo_origem",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(
-                                    id="graf_origem", config={"displayModeBar": False}
-                                ),
-                            ],
-                            width=4,
-                        ),
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "Status Prazo",
-                                    id="titulo_status",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(
-                                    id="graf_status", config={"displayModeBar": False}
-                                ),
-                            ],
-                            width=4,
-                        ),
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "Canal", id="titulo_canal", style=TITULO_GRAFICO
-                                ),
-                                dcc.Graph(
-                                    id="graf_canal", config={"displayModeBar": False}
-                                ),
-                            ],
-                            width=4,
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        html.Div("OTD por UF", id="titulo_uf", style=TITULO_GRAFICO),
-                        dcc.Graph(
-                            id="graf_uf",
-                            config={"displayModeBar": False},
-                            style={"width": "1800px"},
-                        ),
-                    ],
-                    style={
-                        "overflowX": "auto",
-                        "marginTop": "15px",
-                        "marginBottom": "15px",
-                    },
-                ),
-                html.Div(
-                    [
-                        html.Div(
-                            "OTD por Transportadora",
-                            id="titulo_otd_transportadora",
-                            style=TITULO_GRAFICO,
-                        ),
-                        dcc.Graph(
-                            id="graf_otd_transportadora",
-                            config={"displayModeBar": False},
-                            style={"width": "100%"},
-                        ),
-                    ],
-                    style={
-                        "overflowX": "auto",
-                        "marginTop": "15px",
-                        "marginBottom": "15px",
-                    },
-                ),
-                html.Br(),
-                # LINHA 3
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "Top Transportadoras",
-                                    id="titulo_top_transportadora",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(
-                                    id="graf_transportadora",
-                                    config={"displayModeBar": False},
-                                ),
-                            ],
-                            width=12,
-                        )
-                    ]
-                ),
-            ],
-        ),
-        html.Div(
-            id="aba_geografico",
-            style={"display": "none"},
-            children=[
-                dbc.Row(
-                    [
-                        dbc.Col(
                             html.Div(
-                                dcc.DatePickerRange(
-                                    id="geo_data",
-                                    start_date=df["Data_Base"].min(),
-                                    end_date=df["Data_Base"].max(),
-                                    display_format="DD/MM/YYYY",
-                                ),
+                                [
+                                    html.Div(
+                                        "OTD por UF",
+                                        id="titulo_uf",
+                                        style=TITULO_GRAFICO,
+                                    ),
+                                    dcc.Graph(
+                                        id="graf_uf",
+                                        config={"displayModeBar": False},
+                                        style={"width": "1800px"},
+                                    ),
+                                ],
                                 style={
-                                    "width": "100%",
+                                    "overflowX": "auto",
+                                    "marginTop": "15px",
+                                    "marginBottom": "15px",
                                 },
                             ),
-                            width=3,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="geo_canal",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["Canal"].dropna().unique())
+                            html.Div(
+                                [
+                                    html.Div(
+                                        "OTD por Transportadora",
+                                        id="titulo_otd_transportadora",
+                                        style=TITULO_GRAFICO,
+                                    ),
+                                    dcc.Graph(
+                                        id="graf_otd_transportadora",
+                                        config={"displayModeBar": False},
+                                        style={"width": "100%"},
+                                    ),
                                 ],
-                                multi=True,
-                                placeholder="Canal",
+                                style={
+                                    "overflowX": "auto",
+                                    "marginTop": "15px",
+                                    "marginBottom": "15px",
+                                },
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="geo_origem",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Origem_Faturamento"].dropna().unique()
+                            html.Br(),
+                            # LINHA 3
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "Top Transportadoras",
+                                                id="titulo_top_transportadora",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="graf_transportadora",
+                                                config={"displayModeBar": False},
+                                            ),
+                                        ],
+                                        width=12,
                                     )
-                                ],
-                                multi=True,
-                                placeholder="Origem",
+                                ]
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="geo_transportadora",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Transportadora"].dropna().unique()
+                        ],
+                    ),
+                    html.Div(
+                        id="aba_geografico",
+                        style={"display": "none"},
+                        children=[
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Div(
+                                            dcc.DatePickerRange(
+                                                id="geo_data",
+                                                start_date=df["Data_Base"].min(),
+                                                end_date=df["Data_Base"].max(),
+                                                display_format="DD/MM/YYYY",
+                                            ),
+                                            style={
+                                                "width": "100%",
+                                            },
+                                        ),
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="geo_canal",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Canal"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Canal",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="geo_origem",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Origem_Faturamento"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Origem",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="geo_transportadora",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Transportadora"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Transportadora",
+                                        ),
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="geo_uf",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["UF_ENTREGA"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="UF",
+                                        ),
+                                        width=2,
+                                    ),
+                                ],
+                                className="justify-content-center align-items-center g-3",
+                            ),
+                            html.Br(),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "OTD Geral por UF",
+                                                id="titulo_mapa",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="mapa_otd_uf",
+                                                config={"scrollZoom": False},
+                                            ),
+                                        ],
+                                        width=12,
                                     )
-                                ],
-                                multi=True,
-                                placeholder="Transportadora",
+                                ]
                             ),
-                            width=3,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="geo_uf",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["UF_ENTREGA"].dropna().unique())
-                                ],
-                                multi=True,
-                                placeholder="UF",
-                            ),
-                            width=2,
-                        ),
-                    ],
-                    className="justify-content-center align-items-center g-3",
-                ),
-                html.Br(),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "OTD Geral por UF",
-                                    id="titulo_mapa",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(
-                                    id="mapa_otd_uf", config={"scrollZoom": False}
-                                ),
-                            ],
-                            width=12,
-                        )
-                    ]
-                ),
-                html.Br(),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    "OTD por Região",
-                                    id="titulo_regiao",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(id="graf_regiao_otd"),
-                                html.Br(),
-                                html.Div(
-                                    "OTD Transportadora x Região",
-                                    id="titulo_heat_regiao",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(id="heatmap_regiao_transportadora"),
-                                html.Br(),
-                                html.Div(
-                                    "OTD Transportadora x UF",
-                                    id="titulo_heat_uf",
-                                    style=TITULO_GRAFICO,
-                                ),
-                                dcc.Graph(id="heatmap_uf_transportadora"),
-                            ],
-                            width=12,
-                        )
-                    ]
-                ),
-            ],
-        ),
-        html.Div(
-            id="aba_base",
-            style={"display": "none"},
-            children=[
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="base_canal",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["Canal"].dropna().unique())
-                                ],
-                                multi=True,
-                                placeholder="Canal",
-                            ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="base_origem",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Origem_Faturamento"].dropna().unique()
+                            html.Br(),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.Div(
+                                                "OTD por Região",
+                                                id="titulo_regiao",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(id="graf_regiao_otd"),
+                                            html.Br(),
+                                            html.Div(
+                                                "OTD Transportadora x Região",
+                                                id="titulo_heat_regiao",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(
+                                                id="heatmap_regiao_transportadora"
+                                            ),
+                                            html.Br(),
+                                            html.Div(
+                                                "OTD Transportadora x UF",
+                                                id="titulo_heat_uf",
+                                                style=TITULO_GRAFICO,
+                                            ),
+                                            dcc.Graph(id="heatmap_uf_transportadora"),
+                                        ],
+                                        width=12,
                                     )
-                                ],
-                                multi=True,
-                                placeholder="Origem",
+                                ]
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="base_transportadora",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Transportadora"].dropna().unique()
-                                    )
+                        ],
+                    ),
+                    html.Div(
+                        id="aba_base",
+                        style={"display": "none"},
+                        children=[
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="base_canal",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Canal"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Canal",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="base_origem",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Origem_Faturamento"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Origem",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="base_transportadora",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Transportadora"]
+                                                    .dropna()
+                                                    .unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Transportadora",
+                                        ),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="base_uf",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["UF_ENTREGA"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="UF",
+                                        ),
+                                        width=2,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id="base_status",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in sorted(
+                                                    df["Status_Prazo"].dropna().unique()
+                                                )
+                                            ],
+                                            multi=True,
+                                            placeholder="Status",
+                                        ),
+                                        width=2,
+                                    ),
                                 ],
-                                multi=True,
-                                placeholder="Transportadora",
+                                className="mb-3",
                             ),
-                            width=4,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="base_uf",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(df["UF_ENTREGA"].dropna().unique())
+                            html.Br(),
+                            dash_table.DataTable(
+                                id="tabela",
+                                fixed_rows={"headers": True},
+                                page_current=0,
+                                page_size=1000,
+                                page_action="custom",
+                                style_table={
+                                    "overflowX": "auto",
+                                    "minWidth": "100%",
+                                    "maxWidth": "100%",
+                                },
+                                style_data_conditional=[
+                                    {
+                                        "if": {"row_index": "odd"},
+                                        "backgroundColor": "#332146",
+                                        "color": "white",
+                                    },
+                                    {
+                                        "if": {"row_index": "even"},
+                                        "backgroundColor": "#28183A",
+                                        "color": "white",
+                                    },
                                 ],
-                                multi=True,
-                                placeholder="UF",
+                                style_header={
+                                    "backgroundColor": "#FF69B4",
+                                    "color": "white",
+                                    "fontWeight": "bold",
+                                    "textAlign": "center",
+                                },
                             ),
-                            width=2,
-                        ),
-                        dbc.Col(
-                            dcc.Dropdown(
-                                id="base_status",
-                                options=[
-                                    {"label": x, "value": x}
-                                    for x in sorted(
-                                        df["Status_Prazo"].dropna().unique()
-                                    )
-                                ],
-                                multi=True,
-                                placeholder="Status",
-                            ),
-                            width=2,
-                        ),
-                    ],
-                    className="mb-3",
-                ),
-                html.Br(),
-                dash_table.DataTable(
-                    id="tabela",
-                    fixed_rows={"headers": True},
-                    page_current=0,
-                    page_size=1000,
-                    page_action="custom",
-                    style_table={
-                        "overflowX": "auto",
-                        "minWidth": "100%",
-                        "maxWidth": "100%",
-                    },
-                    style_data_conditional=[
-                        {
-                            "if": {"row_index": "odd"},
-                            "backgroundColor": "#332146",
-                            "color": "white",
-                        },
-                        {
-                            "if": {"row_index": "even"},
-                            "backgroundColor": "#28183A",
-                            "color": "white",
-                        },
-                    ],
-                    style_header={
-                        "backgroundColor": "#FF69B4",
-                        "color": "white",
-                        "fontWeight": "bold",
-                        "textAlign": "center",
-                    },
-                ),
-            ],
+                        ],
+                    ),
+                ],
+            ),
         ),
     ],
     id="container_principal",
@@ -762,8 +836,19 @@ app.layout = dbc.Container(
 
 
 # ==================================================
+
 # CALLBACK
+
 # ==================================================
+
+
+@app.callback(
+    Output("loading-output", "children"),
+    Input("tema_dashboard", "data"),
+)
+def loading_tema(tema):
+
+    return ""
 
 
 @app.callback(
@@ -776,80 +861,157 @@ def atualizar_css_dropdown(tema):
 
     return html.Style(f"""
 
+
+
     html,
+
     body,
+
     #react-entry-point,
+
     #_dash-app-content,
+
     .container-fluid {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
+
+
+
 
 
     /* FUNDO DA PÁGINA */
 
+
+
     html {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
+
+
 
     body {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
+
+
 
     #react-entry-point {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
+
+
 
     ._dash-loading {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
 
+
+
     .container-fluid {{
+
         background-color: {cores["fundo"]} !important;
+
     }}
+
+
 
     /* DROPDOWNS */
 
+
+
     .Select-control {{
+
         background-color: {cores["input"]} !important;
+
         border: 1px solid {cores["borda"]} !important;
+
         color: {cores["texto"]} !important;
+
         height: 38px !important;
+
     }}
+
+
 
     .Select-placeholder {{
+
         color: {cores["texto"]} !important;
+
     }}
+
+
 
     .Select-value-label {{
+
         color: {cores["texto"]} !important;
+
     }}
 
+
+
     .Select-menu-outer {{
+
         background-color: {cores["card"]} !important;
+
     }}
+
+
 
     /* DATE PICKER */
 
+
+
     .DateRangePickerInput {{
+
         background-color: {cores["input"]} !important;
+
         border: 1px solid {cores["borda"]} !important;
+
         border-radius: 4px !important;
+
         height: 38px !important;
+
     }}
+
+
 
     .DateInput {{
+
         background-color: {cores["input"]} !important;
+
     }}
+
+
 
     .DateInput_input {{
+
         background-color: {cores["input"]} !important;
+
         color: {cores["texto"]} !important;
+
         border-radius: 0px !important;
+
     }}
 
+
+
     .DateRangePickerInput_arrow {{
+
         color: {cores["texto"]} !important;
+
     }}
+
+
 
     """)
 
@@ -862,6 +1024,7 @@ def atualizar_css_dropdown(tema):
 def trocar_tema(n_clicks, tema):
 
     if not n_clicks:
+
         return tema
 
     return "claro" if tema == "escuro" else "escuro"
@@ -907,6 +1070,7 @@ def salvar_filtros(
 def atualizar_filtros_geo(data):
 
     if not data:
+
         return (
             df["Data_Base"].min(),
             df["Data_Base"].max(),
@@ -975,23 +1139,29 @@ def atualizar_tabela(
     dff_base = df.copy()
 
     if base_canal:
+
         dff_base = dff_base[dff_base["Canal"].isin(base_canal)]
 
     if base_origem:
+
         dff_base = dff_base[dff_base["Origem_Faturamento"].isin(base_origem)]
 
     if base_transportadora:
+
         dff_base = dff_base[dff_base["Transportadora"].isin(base_transportadora)]
 
     if base_uf:
+
         dff_base = dff_base[dff_base["UF_ENTREGA"].isin(base_uf)]
 
     if base_status:
+
         dff_base = dff_base[dff_base["Status_Prazo"].isin(base_status)]
 
     page_size = 1000
 
     inicio = page_current * page_size
+
     fim = inicio + page_size
 
     tabela = dff_base.iloc[inicio:fim].copy()
@@ -1052,20 +1222,25 @@ def atualizar_dashboard(
         dff = df.copy()
 
         data_ini = pd.to_datetime(start_date)
+
         data_fim = pd.to_datetime(end_date)
 
         dff = dff[(dff["Data_Base"] >= data_ini) & (dff["Data_Base"] <= data_fim)]
 
         if canal:
+
             dff = dff[dff["Canal"].isin(canal)]
 
         if origem:
+
             dff = dff[dff["Origem_Faturamento"].isin(origem)]
 
         if transportadora:
+
             dff = dff[dff["Transportadora"].isin(transportadora)]
 
         if uf:
+
             dff = dff[dff["UF_ENTREGA"].isin(uf)]
 
         total = dff["Pedido_Fulfillment"].nunique()
@@ -1116,6 +1291,7 @@ def atualizar_dashboard(
         )
 
         fig_status = aplicar_tema(fig_status, tema)
+
         fig_status.update_traces(textfont=dict(color=TEMAS[tema]["texto"]))
 
         canal_df = dff.groupby("Canal").size().reset_index(name="Fulfillments")
@@ -1277,6 +1453,7 @@ def atualizar_dashboard(
     except Exception as e:
 
         print("\nERRO NO CALLBACK")
+
         traceback.print_exc()
 
         fig_vazia = go.Figure()
@@ -1321,20 +1498,25 @@ def atualizar_geografia(
     dff = df.copy()
 
     data_ini = pd.to_datetime(start_date)
+
     data_fim = pd.to_datetime(end_date)
 
     dff = dff[(dff["Data_Base"] >= data_ini) & (dff["Data_Base"] <= data_fim)]
 
     if canal:
+
         dff = dff[dff["Canal"].isin(canal)]
 
     if origem:
+
         dff = dff[dff["Origem_Faturamento"].isin(origem)]
 
     if transportadora:
+
         dff = dff[dff["Transportadora"].isin(transportadora)]
 
     if uf:
+
         dff = dff[dff["UF_ENTREGA"].isin(uf)]
 
     base_otd = dff[dff["Status_Prazo"].isin(["No Prazo", "Fora do Prazo"])]
@@ -1753,8 +1935,12 @@ def atualizar_cores_tabs(tema):
 
 
 # ==================================================
+
 # EXECUÇÃO
+
 # ==================================================
 
+
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=8050, debug=False)
